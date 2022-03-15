@@ -385,29 +385,34 @@ if ($state -eq "present") {
         if ($description) {
             $lease_params.Description = $description
         }
-
-        # Create Lease
-        Try {
-            # Create lease based on parameters
-            Add-DhcpServerv4Lease @lease_params -WhatIf:$check_mode @extra_args
-
-            # Retreive the lease
-            if (-not $check_mode) {
-                $new_lease = Get-DhcpServerv4Lease -ClientId $mac_dashed -ScopeId $scope_id @extra_args
-                $module.Result.lease = Convert-ReturnValue -Object $new_lease
-            }
-
-            # If lease is the desired type
-            if ($type -eq "lease") {
-                $module.Result.changed = $true
+    
+        # If Lease is the desired state
+        if ($type -eq "lease") {
+            # Create Lease
+            Try {
+                # Create lease based on parameters
+                Add-DhcpServerv4Lease @lease_params -WhatIf:$check_mode @extra_args
+    
+                # Retreive the lease
+                if (-not $check_mode) {
+                    $module.Result.changed = $true
+                    $new_lease = Get-DhcpServerv4Lease -ClientId $mac_dashed -ScopeId $scope_id @extra_args
+                    $module.Result.lease = Convert-ReturnValue -Object $new_lease
+                    $module.Diff.after = Convert-ReturnValue -Object $new_lease
+                }
+                else {
+                    $module.Result.changed = $true
+                    $module.Result.lease = $lease_params
+                    $module.Diff.after = $lease_params
+                }
+    
                 $module.ExitJson()
             }
+            Catch {
+                # Failed to create lease
+                $module.FailJson("Could not create DHCP lease: $($_.Exception.Message)", $_)
+            }
         }
-        Catch {
-            # Failed to create lease
-            $module.FailJson("Could not create DHCP lease: $($_.Exception.Message)", $_)
-        }
-
         # Create Reservation
         Try {
             # If reservation is the desired type
@@ -420,27 +425,26 @@ if ($state -eq "present") {
                 }
 
                 Try {
-                    if ($check_mode) {
-                        # In check mode, a lease won't exist for conversion, make one manually
-                        Add-DhcpServerv4Reservation -ScopeId $scope_id -ClientId $mac_dashed -IPAddress $ip -WhatIf:$check_mode @extra_args
-                    }
-                    else {
-                        # Convert to Reservation
-                        $new_lease | Add-DhcpServerv4Reservation -WhatIf:$check_mode @extra_args
-                    }
+                    # In check mode, a lease won't exist for conversion, make one manually
+                    Add-DhcpServerv4Reservation @lease_params -WhatIf:$check_mode @extra_args
                 }
-                Catch {
+                Catc.h {
                     # Failed to create reservation
                     $module.FailJson("Could not create DHCP reservation: $($_.Exception.Message)", $_)
                 }
 
                 if (-not $check_mode) {
                     # Get DHCP reservation object
+                    $module.Result.changed = $true
                     $new_lease = Get-DhcpServerv4Reservation -ClientId $mac_dashed -ScopeId $scope_id @extra_args
                     $module.Result.lease = Convert-ReturnValue -Object $new_lease
+                    $module.Diff.after = Convert-ReturnValue -Object $new_lease
                 }
-
-                $module.Result.changed = $true
+                else {
+                    $module.Result.changed = $true
+                    $module.Result.lease = $lease_params
+                    $module.Diff.after = $lease_params
+                }
             }
         }
         Catch {
