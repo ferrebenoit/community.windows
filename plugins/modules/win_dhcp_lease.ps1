@@ -340,9 +340,12 @@ if ($state -eq "present") {
                 $reservation = Get-DhcpServerv4Lease -ClientId $current_lease.ClientId -ScopeId $current_lease.ScopeId @extra_args
                 $module.Result.changed = Is-DhcpLease-Changed -Original $original_lease -Updated $reservation
                 $module.Result.lease = Convert-ReturnValue -Object $reservation
+                $module.Diff.after = Convert-ReturnValue -Object $reservation
             }
             else {
-                $module.Result.changed = $true
+                $module.Result.changed = Is-DhcpLease-Changed -Original $original_lease -Updated $params
+                $module.Result.lease = $params
+                $module.Diff.after = $params
             }
 
             # Return values
