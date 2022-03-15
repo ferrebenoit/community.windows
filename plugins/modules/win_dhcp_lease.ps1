@@ -60,7 +60,7 @@ Function Convert-MacAddress {
         
 	# colon format 
     if ($mac -match '^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$') {
-        return $mac -replace ':' '-'
+        return $mac -replace ':', '-'
     }
     # dash format 
     elseif  ($mac -match '^([0-9A-Fa-f]{2}[-]){5}([0-9A-Fa-f]{2})$') {
