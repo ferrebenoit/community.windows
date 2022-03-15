@@ -223,9 +223,7 @@ if ($state -eq "present") {
                     $params.Name = "reservation-" + $params.ClientId
                 }
 
- # Fix this     # Desired type is reservation
-                
-                
+                # Desired type is reservation
                 $current_lease | Add-DhcpServerv4Reservation @params -WhatIf:$check_mode @extra_args
 
                 if (-not $check_mode) {
@@ -287,8 +285,13 @@ if ($state -eq "present") {
 
                 if (-not $check_mode) {
                     $module.Result.lease = Convert-ReturnValue -Object $new_lease
+                    $module.Diff.after = Convert-ReturnValue -Object $new_lease
                 }
-
+                else {
+                    $module.Result.lease = $lease_params
+                    $module.Diff.after = $lease_params
+                }
+                 
                 $module.Result.changed = $true
                 $module.ExitJson()
             }
