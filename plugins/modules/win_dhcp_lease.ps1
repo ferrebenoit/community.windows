@@ -428,7 +428,7 @@ if ($state -eq "present") {
                     # In check mode, a lease won't exist for conversion, make one manually
                     Add-DhcpServerv4Reservation @lease_params -WhatIf:$check_mode @extra_args
                 }
-                Catc.h {
+                Catch {
                     # Failed to create reservation
                     $module.FailJson("Could not create DHCP reservation: $($_.Exception.Message)", $_)
                 }
