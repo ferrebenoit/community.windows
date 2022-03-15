@@ -50,24 +50,18 @@ Function Convert-MacAddress {
     Param(
         [string]$mac
     )
-
-    # Evaluate Length
-    if ($mac.Length -eq 12) {
-        # Insert Dashes
-        $mac = $mac.Insert(2, "-").Insert(5, "-").Insert(8, "-").Insert(11, "-").Insert(14, "-")
+        
+	# colon format 
+    if ($mac -match '^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$') {
+        return $mac -replace ':' '-'
+    }
+    # dash format 
+    elseif  ($mac -match '^([0-9A-Fa-f]{2}[-]){5}([0-9A-Fa-f]{2})$') {
         return $mac
     }
-    elseif ($mac.Length -eq 17) {
-        # Remove Colons
-        if ($mac -like "*:*:*:*:*:*") {
-            return ($mac -replace ':')
-        }
-        # Remove Dashes
-        if ($mac -like "*-*-*-*-*-*") {
-            return ($mac -replace '-')
-        }
-    }
-    else {
+    elseif  ($mac -match '^[0-9a-f]{12}$') {
+        return $mac.Insert(2, "-").Insert(5, "-").Insert(8, "-").Insert(11, "-").Insert(14, "-")
+    }else {
         return $false
     }
 }
@@ -129,16 +123,13 @@ if ($ip) {
 
 # MacAddress was specified
 if ($mac) {
-    if ($mac -like "*-*") {
-        $mac_original = $mac
-        $mac = Convert-MacAddress -mac $mac
-    }
+    $mac_dashed = Convert-MacAddress -mac $mac
 
-    if ($mac -eq $false) {
+    if ($mac_dashed -eq $false) {
         $module.FailJson("The MAC Address is not properly formatted")
     }
     else {
-        $current_lease = Get-DhcpServerv4Scope @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object ClientId -eq $mac_original
+        $current_lease = Get-DhcpServerv4Scope @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object ClientId -eq $mac_dashed
     }
 }
 
@@ -213,8 +204,8 @@ if ($state -eq "present") {
                 # Update parameters
                 $params = @{ }
 
-                if ($mac) {
-                    $params.ClientId = $mac
+                if ($mac_dashed {
+                    $params.ClientId = $mac_dashed
                 }
                 else {
                     $params.ClientId = $current_lease.ClientId
@@ -317,8 +308,8 @@ if ($state -eq "present") {
             # Update parameters
             $params = @{ }
 
-            if ($mac) {
-                $params.ClientId = $mac
+            if ($mac_dashed) {
+                $params.ClientId = $mac_dashed
             }
             else {
                 $params.ClientId = $current_lease.ClientId
@@ -371,7 +362,7 @@ if ($state -eq "present") {
 
         # Required Parameters
         $lease_params = @{
-            ClientId = $mac
+            ClientId = $mac_dashed
             IPAddress = $ip
             ScopeId = $scope_id
             AddressState = 'Active'
@@ -401,7 +392,7 @@ if ($state -eq "present") {
 
             # Retreive the lease
             if (-not $check_mode) {
-                $new_lease = Get-DhcpServerv4Lease -ClientId $mac -ScopeId $scope_id @extra_args
+                $new_lease = Get-DhcpServerv4Lease -ClientId $mac_dashed -ScopeId $scope_id @extra_args
                 $module.Result.lease = Convert-ReturnValue -Object $new_lease
             }
 
@@ -424,13 +415,13 @@ if ($state -eq "present") {
                     $lease_params.Name = $reservation_name
                 }
                 else {
-                    $lease_params.Name = "reservation-" + $mac
+                    $lease_params.Name = "reservation-" + $mac_dashed
                 }
 
                 Try {
                     if ($check_mode) {
                         # In check mode, a lease won't exist for conversion, make one manually
-                        Add-DhcpServerv4Reservation -ScopeId $scope_id -ClientId $mac_original -IPAddress $ip -WhatIf:$check_mode @extra_args
+                        Add-DhcpServerv4Reservation -ScopeId $scope_id -ClientId $mac_dashed -IPAddress $ip -WhatIf:$check_mode @extra_args
                     }
                     else {
                         # Convert to Reservation
@@ -444,7 +435,7 @@ if ($state -eq "present") {
 
                 if (-not $check_mode) {
                     # Get DHCP reservation object
-                    $new_lease = Get-DhcpServerv4Reservation -ClientId $mac_original -ScopeId $scope_id @extra_args
+                    $new_lease = Get-DhcpServerv4Reservation -ClientId $mac_dashed -ScopeId $scope_id @extra_args
                     $module.Result.lease = Convert-ReturnValue -Object $new_lease
                 }
 
