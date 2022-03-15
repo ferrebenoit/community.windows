@@ -68,8 +68,8 @@ Function Convert-MacAddress {
 
 Function Is-DhcpLease-Changed {
     Param(
-        [PSObject]$Original,
-        [PSObject]$Updated
+        $Original,
+        $Updated
     )
 
     # Compare values that we care about
@@ -224,26 +224,23 @@ if ($state -eq "present") {
                 }
 
  # Fix this     # Desired type is reservation
-                $current_lease | Add-DhcpServerv4Reservation -WhatIf:$check_mode @extra_args
+                
+                
+                $current_lease | Add-DhcpServerv4Reservation @params -WhatIf:$check_mode @extra_args
 
                 if (-not $check_mode) {
-                    $current_reservation = Get-DhcpServerv4Lease -ClientId $params.ClientId -ScopeId $current_lease.ScopeId @extra_args
-                }
-
-                # Update the reservation with new values
-                $current_reservation | Set-DhcpServerv4Reservation @params -WhatIf:$check_mode @extra_args
-
-                if (-not $check_mode) {
-                    $updated_reservation = Get-DhcpServerv4Lease -ClientId $params.ClientId -ScopeId $current_reservation.ScopeId @extra_args
+                    $updated_reservation = Get-DhcpServerv4Lease -ClientId $params.ClientId -ScopeId $current_lease.ScopeId @extra_args
                 }
 
                 if (-not $check_mode) {
                     # Compare Values
                     $module.Result.changed = Is-DhcpLease-Changed -Original $original_lease -Updated $updated_reservation
                     $module.Result.lease = Convert-ReturnValue -Object $updated_reservation
+                    $module.Diff.after = Convert-ReturnValue -Object $updated_reservation
                 }
                 else {
-                    $module.Result.changed = $true
+                    $module.Result.changed = Is-DhcpLease-Changed -Original $original_lease -Updated $params
+                    $module.Diff.after = $params
                 }
 
                 $module.ExitJson()
