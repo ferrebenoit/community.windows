@@ -117,11 +117,6 @@ Catch {
 }
 
 # Determine if there is an existing lease
-if ($ip) {
-    $current_lease = Get-DhcpServerv4Scope @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object IPAddress -eq $ip
-}
-
-# MacAddress was specified
 if ($mac) {
     $mac_dashed = Convert-MacAddress -mac $mac
 
@@ -131,6 +126,9 @@ if ($mac) {
     else {
         $current_lease = Get-DhcpServerv4Scope @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object ClientId -eq $mac_dashed
     }
+}
+elseif ($ip){
+    $current_lease = Get-DhcpServerv4Scope @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object IPAddress -eq $ip
 }
 
 # Did we find a lease/reservation
