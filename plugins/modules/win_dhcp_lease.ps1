@@ -385,7 +385,11 @@ if ($state -eq "present") {
             
             $lease_params.addressState = 'Active'
             $lease_params.Confirm = $false
-
+            
+            if ($ip) {
+                $lease_params.ip = $ip
+            }
+            
             if ($duration) {
                 $lease_params.LeaseExpiryTime = (Get-Date).AddDays($duration)
             }
