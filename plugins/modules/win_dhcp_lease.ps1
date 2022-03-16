@@ -320,6 +320,13 @@ if ($state -eq "present") {
                 $params.ClientId = $current_lease.ClientId
             }
 
+            if ($ip) {
+                $params.IpAddress = $ip
+            }
+            else {
+                $params.IpAddress = $current_lease.IpAddress
+            }
+
             if ($description) {
                 $params.Description = $description
             }
