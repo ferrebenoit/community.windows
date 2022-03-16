@@ -47,7 +47,7 @@ if ($null -ne $dhcp_computer_name) {
 }
 
 # filter to the scope if it was provided 
-#Ensure we get the desired lease if mac address is present more than one in all the scope
+#Ensure we get the desired lease if mac address is present more than once in all the scope
 $scope_filter = @{ }
 if ($scope_id) {
     $scope_filter.ScopeId = $scope_id
