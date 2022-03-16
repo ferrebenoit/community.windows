@@ -50,7 +50,7 @@ if ($null -ne $dhcp_computer_name) {
 #Ensure we get the desired lease if mac address is present more than one in all the scope
 $scope_filter = @{ }
 if ($scope_id) {
-    $scope_filter.scope_id = $scope_id
+    $scope_filter.ScopeId = $scope_id
 }
 
 Function Convert-MacAddress {
@@ -373,28 +373,31 @@ if ($state -eq "present") {
             ClientId = $mac_dashed
             IPAddress = $ip
             ScopeId = $scope_id
-            AddressState = 'Active'
-            Confirm = $false
         }
 
-        if ($duration) {
-            $lease_params.LeaseExpiryTime = (Get-Date).AddDays($duration)
-        }
-
-        if ($dns_hostname) {
-            $lease_params.HostName = $dns_hostname
-        }
-
-        if ($dns_regtype) {
-            $lease_params.DnsRR = $dns_regtype
-        }
-
+        
         if ($description) {
             $lease_params.Description = $description
         }
     
         # If Lease is the desired state
         if ($type -eq "lease") {
+            
+            $lease_params.addressState = 'Active'
+            $lease_params.Confirm = $false
+
+            if ($duration) {
+                $lease_params.LeaseExpiryTime = (Get-Date).AddDays($duration)
+            }
+    
+            if ($dns_hostname) {
+                $lease_params.HostName = $dns_hostname
+            }
+    
+            if ($dns_regtype) {
+                $lease_params.DnsRR = $dns_regtype
+            }
+    
             # Create Lease
             Try {
                 # Create lease based on parameters
