@@ -131,11 +131,21 @@ if ($mac) {
         $module.FailJson("The MAC Address is not properly formatted")
     }
     else {
-        $current_lease = Get-DhcpServerv4Scope @scope_filter @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object ClientId -eq $mac_dashed
+        try {
+            $current_lease = Get-DhcpServerv4Scope @scope_filter @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object ClientId -eq $mac_dashed
+        }
+        catch {
+            $module.FailJson("Unable to retreive dhcp scope: $($_.Exception.Message)", $_)
+        }
     }
 }
 elseif ($ip){
-    $current_lease = Get-DhcpServerv4Scope @scope_filter @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object IPAddress -eq $ip
+    try {
+        $current_lease = Get-DhcpServerv4Scope @scope_filter @extra_args | Get-DhcpServerv4Lease @extra_args | Where-Object IPAddress -eq $ip
+    }
+    catch {
+        $module.FailJson("Unable to retreive dhcp scope: $($_.Exception.Message)", $_)
+    }
 }
 
 # Did we find a lease/reservation
@@ -339,12 +349,21 @@ if ($state -eq "present") {
                     $params.Name = $original_lease.Name
                 }
             }
-
-            # Update the reservation with new values
-            $current_lease | Set-DhcpServerv4Reservation @params -WhatIf:$check_mode @extra_args
-
+            
+            try {
+                # Update the reservation with new values
+                $current_lease | Set-DhcpServerv4Reservation @params -WhatIf:$check_mode @extra_args
+            }
+            catch {
+                $module.FailJson("Could not update DHCP lease: $($_.Exception.Message)", $_)
+            }
             if (-not $check_mode) {
-                $reservation = Get-DhcpServerv4Lease -ClientId $current_lease.ClientId -ScopeId $current_lease.ScopeId @extra_args
+                try {
+                    $reservation = Get-DhcpServerv4Lease -ClientId $current_lease.ClientId -ScopeId $current_lease.ScopeId @extra_args
+                }
+                catch {
+                    $module.FailJson("Could not load change to DHCP lease: $($_.Exception.Message)", $_)
+                }
                 $module.Result.changed = Is-DhcpLease-Changed -Original $original_lease -Updated $reservation
                 $module.Result.lease = Convert-ReturnValue -Object $reservation
                 $module.Diff.after = Convert-ReturnValue -Object $reservation
@@ -446,7 +465,12 @@ if ($state -eq "present") {
                 if (-not $check_mode) {
                     # Get DHCP reservation object
                     $module.Result.changed = $true
-                    $new_lease = Get-DhcpServerv4Reservation -ClientId $mac_dashed -ScopeId $scope_id @extra_args
+                    try {
+                        $new_lease = Get-DhcpServerv4Reservation -ClientId $mac_dashed -ScopeId $scope_id @extra_args
+                    }
+                    catch {
+                        $module.FailJson("Could not load newly created DHCP reservation: $($_.Exception.Message)", $_)
+                    }
                     $module.Result.lease = Convert-ReturnValue -Object $new_lease
                     $module.Diff.after = Convert-ReturnValue -Object $new_lease
                 }
